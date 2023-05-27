@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,10 +81,10 @@ var (
 
 // This file contains the main startup processing for the calico/node.  This
 // includes:
-// -  Detecting IP address and Network to use for BGP
-// -  Configuring the node resource with IP/AS information provided in the
-//    environment, or autodetected.
-// -  Creating default IP Pools for quick-start use
+//   - Detecting IP address and Network to use for BGP
+//   - Configuring the node resource with IP/AS information provided in the
+//     environment, or autodetected.
+//   - Creating default IP Pools for quick-start use
 func Run() {
 	// Check $CALICO_STARTUP_LOGLEVEL to capture early log statements
 	ConfigureLogging()
@@ -187,19 +187,17 @@ func Run() {
 		configureAndCheckIPAddressSubnets(ctx, cli, node, k8sNode)
 		// Configure the node AS number.
 		configureASNumber(node)
+		// Populate a reference to the node based on orchestrator node identifiers.
+		configureNodeRef(node)
+		// Apply the updated node resource.
+		if _, err := CreateOrUpdate(ctx, cli, node); err != nil {
+			log.WithError(err).Errorf("Unable to set node resource configuration")
+			utils.Terminate()
+		}
 	}
-
-	// Populate a reference to the node based on orchestrator node identifiers.
-	configureNodeRef(node)
 
 	// Check expected filesystem
 	ensureFilesystemAsExpected()
-
-	// Apply the updated node resource.
-	if _, err := CreateOrUpdate(ctx, cli, node); err != nil {
-		log.WithError(err).Errorf("Unable to set node resource configuration")
-		utils.Terminate()
-	}
 
 	// Configure IP Pool configuration.
 	configureIPPools(ctx, cli, kubeadmConfig)
@@ -309,12 +307,6 @@ func configureAndCheckIPAddressSubnets(ctx context.Context, cli client.Interface
 }
 
 func MonitorIPAddressSubnets() {
-	// If Calico is running in policy only mode we don't need to write BGP
-	// related details to the Node.
-	if os.Getenv("CALICO_NETWORKING_BACKEND") == "none" {
-		log.Info("Skipped monitoring node IP changes when CALICO_NETWORKING_BACKEND=none")
-		return
-	}
 	ctx := context.Background()
 	_, cli := calicoclient.CreateClient()
 	nodeName := utils.DetermineNodeName()
